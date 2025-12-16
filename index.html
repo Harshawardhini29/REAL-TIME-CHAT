@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Real-Time Chat</title>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .chat-container {
+      background: #fff;
+      width: 400px;
+      height: 500px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+    }
+    .messages {
+      flex: 1;
+      padding: 10px;
+      overflow-y: auto;
+    }
+    .message {
+      margin-bottom: 10px;
+    }
+    .sender {
+      font-weight: bold;
+    }
+    .input-box {
+      display: flex;
+      border-top: 1px solid #ddd;
+    }
+    input {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      outline: none;
+    }
+    button {
+      padding: 10px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+<div class="chat-container">
+  <div class="messages" id="messages"></div>
+
+  <div class="input-box">
+    <input id="messageInput" placeholder="Type a message..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+  const socket = io("http://localhost:5000");
+
+  const sender = prompt("Enter your name");
+
+  const messagesDiv = document.getElementById("messages");
+  const messageInput = document.getElementById("messageInput");
+
+  function addMessage(sender, message) {
+    const div = document.createElement("div");
+    div.classList.add("message");
+    div.innerHTML = `<span class="sender">${sender}:</span> ${message}`;
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  }
+
+  // Load old messages
+  socket.on("loadMessages", (messages) => {
+    messages.forEach(msg => {
+      addMessage(msg.sender, msg.message);
+    });
+  });
+
+  // Receive new message
+  socket.on("receiveMessage", (data) => {
+    addMessage(data.sender, data.message);
+  });
+
+  function sendMessage() {
+    const message = messageInput.value.trim();
+    if (!message) return;
+
+    socket.emit("sendMessage", {
+      sender,
+      message
+    });
+
+    messageInput.value = "";
+  }
+</script>
+
+</body>
+</html>
