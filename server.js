@@ -1,38 +1,21 @@
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
-const cors = require("cors");
+const connectDB = require("./config/db");
 require("dotenv").config();
 
-const connectDB = require("./config/db");
-const chatSocket = require("./sockets/chatSocket");
-
-const app = express();
-app.use(cors());
-app.use(express.json());
-
-// Create HTTP server
-const server = http.createServer(app);
-
-// Socket.IO setup
-const io = new Server(server, {
-  cors: {
-    origin: "*",
-  },
-});
-
-// Connect MongoDB
 connectDB();
 
-// Socket logic
-chatSocket(io);
+const app = express();
+const server = http.createServer(app);
 
-// Test route
-app.get("/", (req, res) => {
-  res.send("Real-time chat backend running 🚀");
+const io = new Server(server, {
+  cors: { origin: "*" }
 });
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// 🔥 CONNECT SOCKET FILE
+require("./sockets/chatSocket")(io);
+
+server.listen(5000, () => {
+  console.log("Server running on port 5000");
 });
