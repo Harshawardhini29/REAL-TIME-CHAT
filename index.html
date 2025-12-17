@@ -1,108 +1,358 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <title>Real-Time Chat</title>
-  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <title>Realtime Chat</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f4f4;
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: 'Segoe UI', sans-serif;
+      background: #ece5dd;
+      overflow: hidden;
+    }
+
+    /* LOGIN PAGE */
+    #loginPage {
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      height: 100%;
+      width: 100%;
+      background: #128c7e;
     }
-    .chat-container {
-      background: #fff;
-      width: 400px;
-      height: 500px;
+
+    .login-box {
+      background: white;
+      padding: 40px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+
+    .login-box input, .login-box button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 15px;
+      border-radius: 25px;
+      border: 1px solid #128c7e;
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+    }
+
+    .login-box input::placeholder {
+      color: #999;
+      font-style: italic;
+    }
+
+    .login-box input:focus {
+      border: 1px solid #25d366;
+      box-shadow: 0 0 8px #25d366;
+    }
+
+    .login-box button {
+      background: #25d366;
+      color: white;
+      border: none;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .login-box button:hover {
+      background: #128c7e;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* CHAT PAGE */
+    #chatPage {
+      display: none;
+      height: 100%;
+      width: 100%;
+      display: flex;
+      flex-direction: row;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      flex: 0 0 300px;
+      background: #202c33;
+      color: white;
       display: flex;
       flex-direction: column;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.2);
+      overflow: hidden;
+      height: 100%;
     }
+
+    #userListContainer {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+
+    #userList div {
+      padding: 10px;
+      margin-bottom: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+      background: #111b21;
+      transition: all 0.2s ease;
+    }
+
+    #userList div:hover {
+      background: #075e54;
+    }
+
+    #chatOptions {
+      padding: 15px;
+      border-top: 1px solid #333;
+      background: #111b21;
+    }
+
+    #chatOptions h4 {
+      margin: 10px 0 5px;
+      font-size: 14px;
+      color: #ddd;
+    }
+
+    /* Stylish Inputs */
+    #chatOptions input {
+      width: 100%;
+      padding: 10px 15px;
+      margin: 5px 0;
+      border-radius: 25px;
+      border: 1px solid #075e54;
+      background: #202c33;
+      color: white;
+      outline: none;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+
+    #chatOptions input::placeholder {
+      color: #b0b0b0;
+      font-style: italic;
+    }
+
+    #chatOptions input:focus {
+      border: 1px solid #25d366;
+      box-shadow: 0 0 8px #25d366;
+      background: #2a3c44;
+    }
+
+    /* Stylish Buttons */
+    #chatOptions button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 25px;
+      border: none;
+      font-weight: bold;
+      font-size: 14px;
+      background: #25d366;
+      color: white;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    #chatOptions button:hover {
+      background: #128c7e;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    }
+
+    /* CHAT AREA */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
     .messages {
       flex: 1;
-      padding: 10px;
+      padding: 20px;
       overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      background: #ece5dd;
     }
+
     .message {
+      max-width: 60%;
       margin-bottom: 10px;
+      padding: 10px 15px;
+      border-radius: 8px;
+      background: white;
+      word-wrap: break-word;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
     }
-    .sender {
-      font-weight: bold;
+
+    .me {
+      background: #dcf8c6;
+      margin-left: auto;
     }
+
     .input-box {
       display: flex;
-      border-top: 1px solid #ddd;
+      padding: 10px;
+      background: #f0f0f0;
+      border-top: 1px solid #ccc;
     }
-    input {
+
+    .input-box input {
       flex: 1;
-      padding: 10px;
-      border: none;
+      padding: 12px 20px;
+      border-radius: 25px;
+      border: 1px solid #ccc;
+      font-size: 14px;
       outline: none;
+      transition: all 0.3s ease;
     }
-    button {
-      padding: 10px;
-      background: #4CAF50;
+
+    .input-box input:focus {
+      border: 1px solid #25d366;
+      box-shadow: 0 0 8px #25d366;
+    }
+
+    .input-box button {
+      margin-left: 10px;
+      padding: 12px 20px;
+      border-radius: 50%;
+      background: #25d366;
       color: white;
       border: none;
       cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .input-box button:hover {
+      background: #128c7e;
+      transform: translateY(-2px);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
   </style>
 </head>
 <body>
 
-<div class="chat-container">
-  <div class="messages" id="messages"></div>
+<!-- LOGIN PAGE -->
+<div id="loginPage">
+  <div class="login-box">
+    <h2>Login</h2>
+    <input id="username" placeholder="Enter your name" />
+    <button onclick="login()">Login</button>
+  </div>
+</div>
 
-  <div class="input-box">
-    <input id="messageInput" placeholder="Type a message..." />
-    <button onclick="sendMessage()">Send</button>
+<!-- CHAT PAGE -->
+<div id="chatPage">
+  <div class="sidebar">
+    <div id="userListContainer">
+      <h3 style="padding: 0 10px; margin-top:0; margin-bottom:10px; border-bottom:1px solid #333;">All Users</h3>
+      <div id="userList"></div>
+    </div>
+    <div id="chatOptions">
+      <h4>One-to-One Chat</h4>
+      <input id="receiverId" placeholder="Receiver User ID" />
+      <button onclick="startPrivateChat()">Start Chat</button>
+
+      <h4>Group Chat</h4>
+      <input id="groupName" placeholder="Group Name" />
+      <input id="groupUsers" placeholder="User IDs (comma separated)" />
+      <button onclick="createGroup()">Create Group</button>
+    </div>
+  </div>
+
+  <div class="chat-area">
+    <div class="messages" id="messages"></div>
+    <div class="input-box">
+      <input id="messageInput" placeholder="Type a message" disabled />
+      <button id="sendBtn" onclick="sendMessage()" disabled>➤</button>
+    </div>
   </div>
 </div>
 
 <script>
   const socket = io("http://localhost:5000");
+  let userId = null;
+  let activeChatId = null;
+  let chatReadyFlag = false;
+  let usersList = [];
 
-  const sender = prompt("Enter your name");
-
-  const messagesDiv = document.getElementById("messages");
-  const messageInput = document.getElementById("messageInput");
-
-  function addMessage(sender, message) {
-    const div = document.createElement("div");
-    div.classList.add("message");
-    div.innerHTML = `<span class="sender">${sender}:</span> ${message}`;
-    messagesDiv.appendChild(div);
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  function login() {
+    const name = document.getElementById("username").value;
+    if (!name) return alert("Enter your name");
+    userId = name + "_" + Math.random().toString(36).substring(2, 6);
+    socket.emit("setup", userId);
+    alert("Your User ID: " + userId);
+    document.getElementById("loginPage").style.display = "none";
+    document.getElementById("chatPage").style.display = "flex";
+    addUserToList(userId);
   }
 
-  // Load old messages
-  socket.on("loadMessages", (messages) => {
-    messages.forEach(msg => {
-      addMessage(msg.sender, msg.message);
-    });
-  });
+  function addUserToList(uid) {
+    if (!usersList.includes(uid)) {
+      usersList.push(uid);
+      const div = document.createElement("div");
+      div.innerText = uid;
+      div.onclick = () => document.getElementById("receiverId").value = uid;
+      document.getElementById("userList").appendChild(div);
+    }
+  }
 
-  // Receive new message
-  socket.on("receiveMessage", (data) => {
-    addMessage(data.sender, data.message);
+  function startPrivateChat() {
+    const receiverId = document.getElementById("receiverId").value;
+    if (!receiverId) return alert("Enter Receiver ID");
+    chatReadyFlag = false;
+    activeChatId = null;
+    document.getElementById("messageInput").disabled = true;
+    document.getElementById("sendBtn").disabled = true;
+    socket.emit("oneToOneChat", { senderId: userId, receiverId });
+  }
+
+  function createGroup() {
+    const groupName = document.getElementById("groupName").value;
+    const usersInput = document.getElementById("groupUsers").value;
+    if (!groupName || !usersInput) return alert("Enter group name and user IDs");
+    const users = usersInput.split(",").map(u => u.trim());
+    socket.emit("createGroup", { groupName, users, admin: userId });
+  }
+
+  socket.on("chatReady", chat => {
+    activeChatId = chat._id;
+    chatReadyFlag = true;
+    document.getElementById("messages").innerHTML = "";
+    document.getElementById("messageInput").disabled = false;
+    document.getElementById("sendBtn").disabled = false;
+    chat.users?.forEach(u => addUserToList(u));
   });
 
   function sendMessage() {
-    const message = messageInput.value.trim();
-    if (!message) return;
-
-    socket.emit("sendMessage", {
-      sender,
-      message
-    });
-
-    messageInput.value = "";
+    const text = document.getElementById("messageInput").value.trim();
+    if (!text) return;
+    if (!chatReadyFlag || !activeChatId) { alert("Start a chat first"); return; }
+    socket.emit("sendMessage", { chatId: activeChatId, senderId: userId, content: text });
+    document.getElementById("messageInput").value = "";
   }
-</script>
 
+  socket.on("receiveMessage", msg => {
+    const div = document.createElement("div");
+    div.classList.add("message");
+    if (msg.sender === userId) div.classList.add("me");
+    div.innerText = msg.content;
+    document.getElementById("messages").appendChild(div);
+    const messagesDiv = document.getElementById("messages");
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    addUserToList(msg.sender);
+  });
+
+  socket.on("errorMessage", msg => alert(msg));
+</script>
 </body>
 </html>
+
