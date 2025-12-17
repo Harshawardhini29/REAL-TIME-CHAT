@@ -1,26 +1,91 @@
+const Chat = require("../models/Chat");
 const Message = require("../models/Message");
 
-const chatSocket = (io) => {
-  io.on("connection", async (socket) => {
+module.exports = (io) => {
+  io.on("connection", (socket) => {
     console.log("User connected:", socket.id);
 
-    // 🔹 Send old messages
-    const messages = await Message.find().sort({ createdAt: 1 });
-    socket.emit("loadMessages", messages);
+    // User joins their personal room
+    socket.on("setup", (userId) => {
+      socket.join(userId);
+      console.log("User joined personal room:", userId);
+      socket.emit("connected"); // confirm setup
+    });
 
-    // 🔹 Receive message
-    socket.on("sendMessage", async (data) => {
+    
+    socket.on("oneToOneChat", async ({ senderId, receiverId }) => {
       try {
-        const newMessage = new Message({
-          sender: data.sender,
-          message: data.message,
+        // Find existing chat or create a new one
+        let chat = await Chat.findOne({
+          isGroup: false,
+          users: { $all: [senderId, receiverId] },
         });
 
-        await newMessage.save();
+        if (!chat) {
+          chat = await Chat.create({ users: [senderId, receiverId] });
+        }
 
-        io.emit("receiveMessage", newMessage);
-      } catch (err) {
-        console.error("Message error:", err.message);
+        const chatId = chat._id.toString();
+
+        // Sender joins chat room
+        socket.join(chatId);
+
+        // Ensure receiver also joins the chat room automatically
+        io.to(receiverId).socketsJoin(chatId);
+
+        // Notify both users
+        socket.emit("chatReady", chat);           // sender
+        io.to(receiverId).emit("chatReady", chat); // receiver
+
+      } catch (error) {
+        console.error("One-to-one chat error:", error);
+        socket.emit("errorMessage", "Failed to start chat");
+      }
+    });
+
+    // ✅ SEND MESSAGE (1-1 & GROUP)
+    socket.on("sendMessage", async ({ chatId, senderId, content }) => {
+      try {
+        if (!chatId) return socket.emit("errorMessage", "Start a chat first!");
+
+        // Ensure sender is in the chat room
+        socket.join(chatId);
+
+        const message = await Message.create({
+          sender: senderId,
+          chat: chatId,
+          content,
+        });
+
+        // Send message to all users in the chat room
+        io.to(chatId).emit("receiveMessage", message);
+
+      } catch (error) {
+        console.error("Send message error:", error);
+        socket.emit("errorMessage", "Failed to send message");
+      }
+    });
+
+    // ✅ GROUP CHAT
+    socket.on("createGroup", async ({ groupName, users, admin }) => {
+      try {
+        const group = await Chat.create({
+          isGroup: true,
+          groupName,
+          users,
+          admin,
+        });
+
+        const groupId = group._id.toString();
+
+        // Make all users join group room
+        users.forEach((userId) => {
+          io.to(userId).socketsJoin(groupId);
+          io.to(userId).emit("chatReady", group);
+        });
+
+      } catch (error) {
+        console.error("Group chat error:", error);
       }
     });
 
@@ -30,4 +95,3 @@ const chatSocket = (io) => {
   });
 };
 
-module.exports = chatSocket;
